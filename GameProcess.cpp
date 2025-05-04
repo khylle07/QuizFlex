@@ -1,135 +1,166 @@
-#include <iostream>
-#include <thread>
-#include <windows.h>
 #include "include/GameProcess.h"
 #include "include/MathQuest.h"
 #include "include/FlashCard.h"
-#include <algorithm> // for remove
+#include <iostream>
+#include <windows.h>
+#include <algorithm>
+#include <cctype>
+#include <ctime>
+#include <cstdlib>
+#include <limits>
 
 using namespace std;
 
-void ChooseGameDifficulty();
+// Constructor for GameStats: initializes knowledge to 0 and energy to 10
+GameStats::GameStats() : knowledge(0), energy(10) {}
 
-//==================================================================================
+// Allows player to restore energy at the cost of knowledge
+void GameStats::energyGame() {
+    int choice;
+    system("cls");
+    printLetterByLetter("Would you like to restore your energy? (0 = Exit | 1 = Yes):\n");
+
+    // Input validation loop
+    while(true){
+        cout << "Choice: ";
+        cin >> choice;
+        if(choice != 1 && choice != 0){
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Invalid Input Try Again!!!\n";
+        } else {
+            break;
+        }
+    }
+
+    // Energy restoration logic if player chooses yes and has enough knowledge
+    if (choice == 1 && knowledge > 5) {
+        srand(time(0));
+        knowledge -= rand() % 5 + 1;  // Deduct random amount of knowledge
+        energy += rand() % 10 + 1;    // Add random amount of energy
+        if (energy > 99) energy = 99;
+
+        // Resting animation
+        printLetterByLetter("Resting");
+        for (int i = 0; i < 5; i++) {
+            cout << ".";
+            Sleep(300);
+        }
+        cout << "\nEnergy Restored!\n";
+        Sleep(1000);
+        system("cls");
+
+    } else {
+        // Not enough knowledge to restore energy
+        cout << "+========================+\n";
+        printLetterByLetter("| Insufficient Knowledge!!! |\n");
+        cout << "+========================+\n";
+        Sleep(2000);
+        system("cls");
+        return;
+    }
+}
+
+// Displays current knowledge and energy level of the player
+void GameStats::showStatus() const {
+    cout << "+====================+\n";
+    printLetterByLetter("| Student Status     |\n");
+    cout << "| Knowledge: " << knowledge << "\n";
+    cout << "| Energy: " << energy << "\n";
+    cout << "+====================+\n";
+}
+
+// Main game loop: shows menu, gets user input, and runs selected game mode
+void GameProcess::run() {
+    showWelcome();
+    while (true) {
+        stats.showStatus();
+        GameType choice = getUserGameChoice();
+        switch (choice) {
+            case GameType::MathQuest:
+                playMathQuest(); break;
+            case GameType::FlashCard:
+                playFlashCard(); break;
+            case GameType::RestoreEnergy:
+                stats.energyGame(); break;
+            case GameType::Exit:
+                cout << "Thanks for playing!\n";
+                return;
+        }
+    }
+}
+
+// Shows intro and asks player if they want to play or exit
+void GameProcess::showWelcome() {
+    string start;
+    cout << "+-------------------------------------+\n";
+    cout << "|               QuizFlex              |\n";
+    cout << "+-------------------------------------+\n";
+
+    printLetterByLetter(
+        "Welcome to the game!\n"
+        "There are 2 Study Tools.\n"
+        "Earn Knowledge and spend it to restore Energy.\n"
+        "Would you like to play the game? (Y = yes | N = no)\n"
+    );
+
+    // Input loop for yes/no
+    while (true) {
+        printLetterByLetter("Enter your choice: ");
+        getline(cin, start);
+        transform(start.begin(), start.end(), start.begin(), ::toupper);
+
+        if (start == "Y" || start == "YES") {
+            system("cls");
+            break;
+        } else if (start == "N" || start == "NO") {
+            printLetterByLetter("Exiting the game...\n");
+            exit(0);
+        } else {
+            printLetterByLetter("Invalid input. Try again.\n");
+        }
+    }
+}
+
+// Displays the main menu and gets the user's selected game mode
+GameType GameProcess::getUserGameChoice() const {
+    int input;
+
+    cout << "\nChoose an action:\n";
+    cout << "0. Exit\n1. Mathematical Operation\n2. FlashCard\n3. Restore Energy\n";
+
+    // Input validation loop
+    while (true) {
+        cout << "Enter choice: ";
+        cin >> input;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        if (cin.fail() || input < 0 || input > 3) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Try again.\n";
+        } else {
+            break;
+        }
+    }
+
+    return static_cast<GameType>(input);
+}
+
+// Starts the MathQuest game
+void GameProcess::playMathQuest() {
+    StartMathGame(stats);
+}
+
+// Starts the FlashCard game
+void GameProcess::playFlashCard() {
+    startFlashCardGame(stats);
+}
+
+// Prints a string letter by letter with a small delay for effect
 void printLetterByLetter(const string& message) {
     for (char c : message) {
         cout << c;
         Sleep(2);
     }
 }
-
-//==================================================================================
-
-void ChooseGameDifficulty() {
-    string print;
-    system("cls");
-
-    printLetterByLetter("Choose Difficulty Level\n");
-    printLetterByLetter("A. Beginner\n");
-    printLetterByLetter("B. Basic\n");
-    printLetterByLetter("C. Moderate");
-    printLetterByLetter("E. Expert");
-    printLetterByLetter("M. Return To Menu");
-}
-
-void GameInstruction() {
-    string print;
-    cout << "+-------------------------------------+\n";
-    cout << "|               QuizFlex              |\n";
-    cout << "+-------------------------------------+\n";
-    print += "Welcome to the game!!!\n";
-    print += "There are a total of 2 Study Tools.\n";
-    print += "Each game can earn you knowledge that will help restore your lost energy.\n";
-
-    printLetterByLetter(print);
-    GameStart();
-}
-
-void GameStart(){
-    string choice, print;
-
-    do{
-        print = "Do You Want To Play The Game?(y/n): ";
-        printLetterByLetter(print);
-        cin >> choice;
-
-        if (choice == "Y" || choice == "y") {
-            print = "Great! Let's continue.";
-            printLetterByLetter(print);
-            Sleep(1000);
-            system("cls");
-        } else if (choice == "N" || choice == "n") {
-            print = "Awwwww man.....\n";
-            printLetterByLetter(print);
-            exit(0);
-        } else {
-            cout << "Invalid input." << endl;
-            printLetterByLetter(print);
-        }
-    }while(choice != "y" && choice != "Y");
-}
-
-bool ShowGameChoice(){
-    system("cls");
-    GameStats stats;
-    stats.showStatus();
-    string print;
-    int choice;
-    int knowledge = stats.knowledge;
-    int energy = stats.energy;
-
-    cout << endl;
-    print += "\nChoose an action(Press 0 To Exit)\n";
-    print += "1. Mathematical Operation\n";
-    print += "2. FlashCard\n";
-    printLetterByLetter(print);
-
-    print = "Enter choice: ";
-    printLetterByLetter(print);
-    cin >> choice;
-
-    if (cin.fail()) {
-        cin.clear();
-        cin.ignore(1000, '\n');
-        system("cls");
-        cout << "Invalid input. Try again.\n";
-        return true; // Continue the game loop
-    }
-
-    switch (choice) {
-        case 1:
-            cout << "Entering.... Math Quest\n";
-            StartMathGame(knowledge, energy);
-            break;
-        case 2:
-            cout << "Entering.... FlashCards\n";
-            startFlashCardGame(knowledge, energy);
-            break;
-        case 0:
-            cout << "Exiting.....";
-            return false; // Exit the game loop
-        default:
-            cout << "Invalid choice. Try again.\n";
-            cin.clear();
-            cin.ignore(100, '\n');
-            break;
-    }
-    return true; // Continue the game loop
-}
-
-GameStats::GameStats() {
-    energy = 10;
-    knowledge = 0;
-}
-
-void GameStats::showStatus() {
-    cout << "+====================+\n";
-    printLetterByLetter("| Student Status     |\n");
-    printLetterByLetter("| Knowledge: ");
-    cout << knowledge << "       |" << endl;
-    printLetterByLetter("| Energy: ");
-    cout << energy << "         |" << endl;
-    cout << "+====================+\n";
-}
-
-
