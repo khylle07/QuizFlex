@@ -1,6 +1,7 @@
 #ifndef FLASHCARD_H
 #define FLASHCARD_H
 
+#include "GameProcess.h"
 #include <vector>
 #include <string>
 
@@ -22,6 +23,8 @@ private:
     size_t currentQuestion = 0;
 };
 
-void startFlashCardGame(int& knowledge, int& energy);
+void waitForEnter();
+void startFlashCardGame(GameStats& stats);
+void showFlashCardMenu();
 
 #endif
